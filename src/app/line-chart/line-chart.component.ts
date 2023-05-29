@@ -28,7 +28,7 @@ interface chartData {
 export class LineChartComponent implements OnInit, OnDestroy {
   button: any;
   state: any;
-  msg = 'Connecting to Websocket';
+  msg: any;
 
   public chart: any;
   data: chartData;
@@ -47,26 +47,39 @@ export class LineChartComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.button = 'Stop';
-    this.state = true;
+    this.connectSocket();
+  }
+
+  ngOnDestroy(): void {
+    this.destroySocket();
+  }
+
+  destroySocket(): void {
+    this.msg = 'Stopped!';
+    this.subcription.unsubscribe();
+    this.socket$.complete();
+  }
+
+  connectSocket() :void {
+    this.msg = 'Connecting to Websocket';
     this.socket$ = new WebSocketSubject('ws://localhost:4444');
     this.subcription = this.socket$.subscribe(
       (data: number[]) => {
+        this.msg = 'Success!';
         if (!this.initChart) {
           this.initChartData(data.length);
+          this.state = true;
+          this.button = 'Stop';
         }
         //Update chartData with received data
         this.updateData(data);
       },
       () => {
         this.msg = 'Could not establish connection to WebSocket';
+        this.button = 'Refresh';
+        this.state = null
       }
     );
-  }
-
-  ngOnDestroy(): void {
-    this.subcription.unsubscribe();
-    this.socket$.complete();
   }
 
   updateData(data: number[]): void {
@@ -89,7 +102,6 @@ export class LineChartComponent implements OnInit, OnDestroy {
   }
 
   initChartData(numCPU: number): void {
-    this.msg = 'Success!'
     let i = 0;
     for (i = 0; i < numCPU; i++) {
       var color = this.random_rgba();
@@ -122,18 +134,17 @@ export class LineChartComponent implements OnInit, OnDestroy {
 
   pause(): void {
     if (this.state) {
-      this.subcription.unsubscribe();
-      this.socket$.complete();
       this.button = 'Resume';
       this.state = false;
+
+      this.destroySocket();
+    } else if (!this.state) {
+      this.button = 'Stop';
+      this.state = true;
+
+      this.connectSocket();
     } else {
-      this.socket$ = new WebSocketSubject('ws://localhost:4444');
-      this.subcription = this.socket$.subscribe((data: number[]) => {
-      //Update chartData with received data
-      this.updateData(data);
-    });
-    this.button = 'Stop';
-    this.state = true;  
+      window.location.reload();
     }
     
   }
