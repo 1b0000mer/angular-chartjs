@@ -28,6 +28,7 @@ interface chartData {
 export class LineChartComponent implements OnInit, OnDestroy {
   button: any;
   state: any;
+  msg = 'Connecting to Websocket';
 
   public chart: any;
   data: chartData;
@@ -49,13 +50,18 @@ export class LineChartComponent implements OnInit, OnDestroy {
     this.button = 'Stop';
     this.state = true;
     this.socket$ = new WebSocketSubject('ws://localhost:4444');
-    this.subcription = this.socket$.subscribe((data: number[]) => {
-      if (!this.initChart) {
-        this.initChartData(data.length);
+    this.subcription = this.socket$.subscribe(
+      (data: number[]) => {
+        if (!this.initChart) {
+          this.initChartData(data.length);
+        }
+        //Update chartData with received data
+        this.updateData(data);
+      },
+      () => {
+        this.msg = 'Could not establish connection to WebSocket';
       }
-      //Update chartData with received data
-      this.updateData(data);
-    });
+    );
   }
 
   ngOnDestroy(): void {
@@ -83,6 +89,7 @@ export class LineChartComponent implements OnInit, OnDestroy {
   }
 
   initChartData(numCPU: number): void {
+    this.msg = 'Success!'
     let i = 0;
     for (i = 0; i < numCPU; i++) {
       var color = this.random_rgba();
